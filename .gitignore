@@ -1,0 +1,47 @@
+# Bỏ qua các thư mục build (thư mục chứa tệp nhị phân được biên dịch)
+build/
+bin/
+out/
+
+# Bỏ qua thư mục CMake (nếu sử dụng CMake)
+CMakeFiles/
+CMakeCache.txt
+Makefile
+cmake_install.cmake
+
+# Bỏ qua các thư mục và file tạm thời của IDE
+.vscode/
+.idea/
+*.vscode/
+*.sublime-workspace
+*.sublime-project
+
+# Bỏ qua tệp nhị phân và tệp biên dịch
+*.o
+*.obj
+*.exe
+*.out
+*.app
+# *.dll
+*.so
+*.dylib
+# *.a
+*.lib
+
+# Bỏ qua các tệp log
+*.log
+
+# Bỏ qua các tệp cấu hình hệ thống
+.DS_Store
+Thumbs.db
+
+# Bỏ qua các tệp và thư mục khác không cần thiết
+*.bak
+*.swp
+*.tmp
+*.class
+*.jar
+*.db
+
+# Nếu bạn sử dụng gdb hoặc các công cụ debug khác
+*.gdb
