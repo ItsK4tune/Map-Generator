@@ -1,7 +1,95 @@
 #include "util/obj.h"
 
-#define TERRAIN_SIZE 100
-#define HALF_SIZE (TERRAIN_SIZE / 2)
+Object::Object(const glm::vec3 &ambient,
+               const glm::vec3 &diffuse,
+               const glm::vec3 &specular,
+               float shininess)
+    : m_material{ambient, diffuse, specular, shininess}
+{
+}
+
+Object::Object(const Material &material)
+    : m_material(material)
+{
+}
+
+Object::Object(const std::vector<Vertex> &vertices,
+               const glm::vec3 &ambient,
+               const glm::vec3 &diffuse,
+               const glm::vec3 &specular,
+               float shininess)
+    : m_vertices(vertices), m_material{ambient, diffuse, specular, shininess}
+{
+}
+
+Object::Object(const std::vector<Vertex> &vertices,
+               const Material &material)
+    : m_vertices(vertices), m_material(material)
+{
+}
+
+Object::Object()
+    : m_material{{0.1f, 0.1f, 0.1f},
+                 {0.5f, 0.5f, 0.5f},
+                 {1.0f, 1.0f, 1.0f},
+                 32.0f}
+{
+}
+
+void Object::setVertices(const std::vector<Vertex> &vertices)
+{
+    m_vertices = vertices;
+}
+
+void Object::setMaterial(const Material &material)
+{
+    m_material = material;
+}
+
+void Object::setAmbient(const glm::vec3 &ambient)
+{
+    m_material.ambient = ambient;
+}
+
+void Object::setDiffuse(const glm::vec3 &diffuse)
+{
+    m_material.diffuse = diffuse;
+}
+
+void Object::setSpecular(const glm::vec3 &specular)
+{
+    m_material.specular = specular;
+}
+
+void Object::setShininess(float shininess)
+{
+    m_material.shininess = shininess;
+}
+
+std::vector<Vertex> &Object::getVertex()
+{
+    return m_vertices;
+}
+
+glm::vec3 Object::getAmbient() const
+{
+    return m_material.ambient;
+}
+
+glm::vec3 Object::getDiffuse() const
+{
+    return m_material.diffuse;
+}
+
+glm::vec3 Object::getSpecular() const
+{
+    return m_material.specular;
+}
+
+float Object::getShininess() const
+{
+    return m_material.shininess;
+}
 
 glm::vec3 calculateNormal(glm::vec3 a, glm::vec3 b, glm::vec3 c)
 {
@@ -10,48 +98,38 @@ glm::vec3 calculateNormal(glm::vec3 a, glm::vec3 b, glm::vec3 c)
     return glm::normalize(glm::cross(edge1, edge2));
 }
 
-void generateTerrain(std::vector<Vertex> &vertices)
+void generateTerrain(std::vector<Vertex> &vertices, int terrainSize)
 {
-    std::vector<std::vector<float>> heightMap(TERRAIN_SIZE, std::vector<float>(TERRAIN_SIZE));
+    std::vector<std::vector<float>> heightMap(terrainSize, std::vector<float>(terrainSize));
 
-    for (int x = 0; x < TERRAIN_SIZE; ++x)
-        for (int y = 0; y < TERRAIN_SIZE; ++y)
-            heightMap[x][y] = static_cast<float>(rand()) / RAND_MAX;
+    for (int x = 0; x < terrainSize; ++x)
+        for (int y = 0; y < terrainSize; ++y)
+            heightMap[x][y] = static_cast<float>(rand()) / RAND_MAX * 1.07f;
 
-    glm::vec3 lightPos(0.0f, 5.0f, 0.0f);
-
-    for (int x = 0; x < TERRAIN_SIZE - 1; ++x)
+    for (int x = 0; x < terrainSize - 1; ++x)
     {
-        for (int y = 0; y < TERRAIN_SIZE - 1; ++y)
+        for (int y = 0; y < terrainSize - 1; ++y)
         {
             float z1 = heightMap[x][y];
             float z2 = heightMap[x][y + 1];
             float z3 = heightMap[x + 1][y];
             float z4 = heightMap[x + 1][y + 1];
 
-            glm::vec3 p1(x - HALF_SIZE, z1, y - HALF_SIZE);
-            glm::vec3 p2(x - HALF_SIZE, z2, y + 1 - HALF_SIZE);
-            glm::vec3 p3(x + 1 - HALF_SIZE, z3, y - HALF_SIZE);
-            glm::vec3 p4(x + 1 - HALF_SIZE, z4, y + 1 - HALF_SIZE);
+            glm::vec3 p1(x - terrainSize / 2, z1, y - terrainSize / 2);
+            glm::vec3 p2(x - terrainSize / 2, z2, y + 1 - terrainSize / 2);
+            glm::vec3 p3(x + 1 - terrainSize / 2, z3, y - terrainSize / 2);
+            glm::vec3 p4(x + 1 - terrainSize / 2, z4, y + 1 - terrainSize / 2);
 
             glm::vec3 n1 = calculateNormal(p1, p2, p3);
             glm::vec3 n2 = calculateNormal(p3, p2, p4);
 
-            auto computeColor = [&](float height, glm::vec3 normal, glm::vec3 pos) -> glm::vec3
-            {
-                glm::vec3 lightDir = glm::normalize(lightPos - pos);
-                float diffuse = glm::clamp(glm::dot(normal, lightDir), 0.0f, 1.0f);
-                glm::vec3 baseColor(height, 0.5f, 1.0f - height);
-                return glm::clamp(baseColor * diffuse, 0.0f, 1.0f);
-            };
+            vertices.push_back({p1, {x / (float)terrainSize, y / (float)terrainSize}, n1});
+            vertices.push_back({p2, {x / (float)terrainSize, (y + 1) / (float)terrainSize}, n1});
+            vertices.push_back({p3, {(x + 1) / (float)terrainSize, y / (float)terrainSize}, n1});
 
-            vertices.push_back({p1, {x / (float)TERRAIN_SIZE, y / (float)TERRAIN_SIZE}, computeColor(z1, n1, p1), n1});
-            vertices.push_back({p2, {x / (float)TERRAIN_SIZE, (y + 1) / (float)TERRAIN_SIZE}, computeColor(z2, n1, p2), n1});
-            vertices.push_back({p3, {(x + 1) / (float)TERRAIN_SIZE, y / (float)TERRAIN_SIZE}, computeColor(z3, n1, p3), n1});
-
-            vertices.push_back({p3, {(x + 1) / (float)TERRAIN_SIZE, y / (float)TERRAIN_SIZE}, computeColor(z3, n2, p3), n2});
-            vertices.push_back({p2, {x / (float)TERRAIN_SIZE, (y + 1) / (float)TERRAIN_SIZE}, computeColor(z2, n2, p2), n2});
-            vertices.push_back({p4, {(x + 1) / (float)TERRAIN_SIZE, (y + 1) / (float)TERRAIN_SIZE}, computeColor(z4, n2, p4), n2});
+            vertices.push_back({p3, {(x + 1) / (float)terrainSize, y / (float)terrainSize}, n2});
+            vertices.push_back({p2, {x / (float)terrainSize, (y + 1) / (float)terrainSize}, n2});
+            vertices.push_back({p4, {(x + 1) / (float)terrainSize, (y + 1) / (float)terrainSize}, n2});
         }
     }
 }

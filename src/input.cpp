@@ -82,8 +82,8 @@ void cursor_position_callback(GLFWwindow *window, double xpos, double ypos)
         startX = xpos;
         startY = ypos;
 
-        model = createAffineTransformMatrix(glm::vec3(1),
+        model = createAffineTransformMatrix(glm::vec3(1.0f),
                                             glm::vec3(pitch, yaw, 0),
-                                            glm::vec3(1));
+                                            glm::vec3(0.0f));
     }
 }
