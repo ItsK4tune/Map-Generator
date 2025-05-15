@@ -6,6 +6,7 @@ layout(location = 2) in vec3 normal;
 
 out vec3 fragPos;
 out vec3 fragNormal;
+out float height;
 
 uniform mat4 model;
 uniform mat4 view;
@@ -13,8 +14,9 @@ uniform mat4 projection;
 
 void main()
 {
-    fragPos = pos;
+    height = pos.y;
+    fragPos = vec3(model * vec4(pos, 1.0));
     fragNormal = mat3(transpose(inverse(model))) * normal;
 
-    gl_Position = projection * view * model * vec4(fragPos, 1.0);
+    gl_Position = projection * view * vec4(fragPos, 1.0);
 }

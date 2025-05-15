@@ -4,16 +4,21 @@
 
 Camera *globalCamera = nullptr;
 
-bool rotating = false;
-double startX = 0.0, startY = 0.0;
-float pitch = 0.0f, yaw = 0.0f;
+float pitch = 0.0f, yaw = -90.0f;
+float distanceToObject = 3.0f;
+glm::vec3 objectRotation = glm::vec3(0.0f);
+glm::vec3 objectScale = glm::vec3(1.0f);
 glm::mat4 model = glm::mat4(1.0f);
+// bool rotating = false;
+// double startX = 0.0, startY = 0.0;
 
 void key_callback(GLFWwindow *window, int key, int scancode, int action, int mods)
 {
     if (!globalCamera || action != GLFW_PRESS && action != GLFW_REPEAT)
         return;
 
+    float angleStep = 0.03f;
+    float scaleStep = 0.03f;
     float speed = 1.0f;
     glm::vec3 forward = glm::normalize(globalCamera->getTarget() - globalCamera->getPosition());
     glm::vec3 right = glm::normalize(glm::cross(forward, globalCamera->getUp()));
@@ -39,51 +44,79 @@ void key_callback(GLFWwindow *window, int key, int scancode, int action, int mod
     case GLFW_KEY_LEFT_CONTROL:
         globalCamera->move(-up, speed);
         break;
+    case GLFW_KEY_UP:
+        objectRotation.x -= angleStep;
+        break;
+    case GLFW_KEY_DOWN:
+        objectRotation.x += angleStep;
+        break;
+    case GLFW_KEY_LEFT:
+        objectRotation.y -= angleStep;
+        break;
+    case GLFW_KEY_RIGHT:
+        objectRotation.y += angleStep;
+        break;
+    case GLFW_KEY_PAGE_UP:
+        objectScale += glm::vec3(scaleStep);
+        break;
+    case GLFW_KEY_PAGE_DOWN:
+        objectScale -= glm::vec3(scaleStep);
+        objectScale = glm::max(objectScale, glm::vec3(0.1f));
+        break;
     case GLFW_KEY_ESCAPE:
         glfwSetWindowShouldClose(window, GLFW_TRUE);
         break;
     default:
         break;
     }
+
+    model = createAffineTransformMatrix(objectScale, objectRotation, glm::vec3(0.0f));
 }
 
-void mouse_button_callback(GLFWwindow *window, int button, int action, int mods)
+void framebuffer_size_callback(GLFWwindow *window, int width, int height)
 {
-    if (button == GLFW_MOUSE_BUTTON_LEFT)
+    glViewport(0, 0, width, height);
+    if (globalCamera)
     {
-        if (action == GLFW_PRESS)
-        {
-            rotating = true;
-            glfwGetCursorPos(window, &startX, &startY);
-        }
-        else if (action == GLFW_RELEASE)
-        {
-            rotating = false;
-        }
+        globalCamera->updateFromWindowSize(width, height);
     }
 }
 
 void cursor_position_callback(GLFWwindow *window, double xpos, double ypos)
 {
-    if (rotating)
+    static bool firstMouse = true;
+    static double lastX = 0.0, lastY = 0.0;
+
+    if (firstMouse)
     {
-        double dx = xpos - startX;
-        double dy = ypos - startY;
+        lastX = xpos;
+        lastY = ypos;
+        firstMouse = false;
+    }
 
-        float sensitivity = 0.001f;
-        yaw += dx * sensitivity;
-        pitch += dy * sensitivity;
+    double dx = xpos - lastX;
+    double dy = lastY - ypos;
 
-        if (pitch > 89.0f)
-            pitch = 89.0f;
-        if (pitch < -89.0f)
-            pitch = -89.0f;
+    lastX = xpos;
+    lastY = ypos;
 
-        startX = xpos;
-        startY = ypos;
+    float sensitivity = 0.1f;
+    yaw += dx * sensitivity;
+    pitch += dy * sensitivity;
 
-        model = createAffineTransformMatrix(glm::vec3(1.0f),
-                                            glm::vec3(pitch, yaw, 0),
-                                            glm::vec3(0.0f));
+    if (pitch > 89.0f)
+        pitch = 89.0f;
+    if (pitch < -89.0f)
+        pitch = -89.0f;
+
+    glm::vec3 direction;
+    direction.x = cos(glm::radians(pitch)) * cos(glm::radians(yaw));
+    direction.y = sin(glm::radians(pitch));
+    direction.z = cos(glm::radians(pitch)) * sin(glm::radians(yaw));
+
+    if (globalCamera)
+    {
+        glm::vec3 position = globalCamera->getTarget() - glm::normalize(direction) * distanceToObject;
+        globalCamera->setPosition(position);
     }
 }
