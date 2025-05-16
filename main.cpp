@@ -21,7 +21,7 @@ int main()
     Object ground;
 
     std::vector<Vertex> groundVert;
-    generateTerrain(groundVert, 100);
+    generateTerrain(groundVert, 7);
     Mesh groundMesh(groundVert);
     ground.setMesh(groundMesh);
 
@@ -41,8 +41,7 @@ int main()
     globalCamera = &camera;
 
     // Create sun
-    Light sun(glm::vec3(0.0f, 5.0f, 5.0f),
-              glm::vec3(1.0f, 1.0f, 1.0f));
+    Light sun(glm::vec3(1.0f, 1.0f, 1.0f));
 
     std::vector<Vertex> sunVert;
     createSunVertices(sunVert);
@@ -65,7 +64,7 @@ int main()
         glfwPollEvents();
 
         time = glfwGetTime();
-        sun.setPosition(glm::vec3(5 * cos(time), 5, 5 * sin(time)));
+        sun.setPosition(glm::vec3(5 * cos(time), 5 * sin(time), 0));
 
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -79,6 +78,8 @@ int main()
 
         ground.getShader().setVec3("lightPos", sun.getPosition());
         ground.getShader().setVec3("lightColor", sun.getColor());
+
+        ground.getShader().setVec3("objectPosition", ground.getPosition());
         ground.getShader().setVec3("ambient", ground.getAmbient());
         ground.getShader().setVec3("diffuse", ground.getDiffuse());
         ground.getShader().setVec3("specular", ground.getSpecular());

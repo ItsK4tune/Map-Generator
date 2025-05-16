@@ -1,3 +1,4 @@
+#include <ctime>
 #include "util/object.h"
 #include "util/loadShader.h"
 
@@ -40,6 +41,11 @@ Object::Object()
 {
 }
 
+void Object::setPosition(const glm::vec3 &position)
+{
+    m_position = position;
+}
+
 void Object::setMesh(const Mesh &mesh)
 {
     m_mesh = mesh;
@@ -73,6 +79,11 @@ void Object::setShininess(float shininess)
 void Object::setShader(const Shader &shader)
 {
     m_shader = shader;
+}
+
+glm::vec3 Object::getPosition() const
+{
+    return m_position;
 }
 
 Mesh &Object::getMesh()
@@ -200,43 +211,44 @@ glm::vec3 calculateNormal(glm::vec3 a, glm::vec3 b, glm::vec3 c)
     return glm::normalize(glm::cross(edge1, edge2));
 }
 
-float perlinNoise2D(float x, float y, int octaves = 4, float persistence = 0.5f, float scale = 1.0f)
+float perlinNoise2D(float x, float y, float seedX, float seedY, int octaves = 4, float persistence = 0.5f, float scale = 1.0f)
 {
     float total = 0.0f;
     float frequency = scale;
     float amplitude = 1.0f;
-    float maxValue = 0.0f; // để chuẩn hóa kết quả về [0,1]
+    float maxValue = 0.0f;
 
     for (int i = 0; i < octaves; i++)
     {
-        float noiseValue = stb_perlin_noise3(x * frequency, y * frequency, 0.0f, 0, 0, 0);
+        float noiseValue = stb_perlin_noise3((x + seedX) * frequency, (y + seedY) * frequency, 0.0f, 0, 0, 0);
         total += noiseValue * amplitude;
 
         maxValue += amplitude;
-        amplitude *= persistence; // giảm biên độ theo mỗi octave
-        frequency *= 2.0f;        // tăng tần số (chi tiết) theo mỗi octave
+        amplitude *= persistence;
+        frequency *= 2.0f;
     }
 
-    return total / maxValue; // chuẩn hóa noise về khoảng [-1,1]
+    return total / maxValue;
 }
 
 void generateTerrain(std::vector<Vertex> &vertices, int terrainSize)
 {
+    srand(time(NULL));
+    float seedX = static_cast<float>(rand() % 1000);
+    float seedY = static_cast<float>(rand() % 1000);
+
     std::vector<std::vector<float>> heightMap(terrainSize, std::vector<float>(terrainSize));
 
     for (int x = 0; x < terrainSize; ++x)
     {
         for (int y = 0; y < terrainSize; ++y)
         {
-            // Thay vì random đơn thuần:
-            // heightMap[x][y] = static_cast<float>(rand()) / RAND_MAX * 1.07f;
-
             float nx = (float)x / (float)terrainSize;
             float ny = (float)y / (float)terrainSize;
 
-            float noiseHeight = perlinNoise2D(nx * 10.0f, ny * 10.0f, 6, 0.5f, 2.0f); // tăng số octave & scale
-            noiseHeight = (noiseHeight + 1.0f) / 2.0f;                                // chuẩn hóa về [0,1]
-            heightMap[x][y] = noiseHeight * 2.0f;                                     // scale độ cao
+            float noiseHeight = perlinNoise2D(nx * 10.0f, ny * 10.0f, seedX, seedY, 6, 0.5f, 2.0f);
+            noiseHeight = (noiseHeight + 1.0f) / 2.0f;
+            heightMap[x][y] = noiseHeight * 2.0f;
         }
     }
 
